@@ -53,7 +53,7 @@ function init() {
 
     // add the objects
 
-    createGround("initial", 0);
+    createGround();
 
     createChicken();
 
@@ -130,7 +130,7 @@ function createScene() {
     renderer.setSize(WIDTH, HEIGHT);
 
     // Enable shadow rendering
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = false;
 
     // Add the DOM element of the renderer to the
     // container we created in the HTML
@@ -173,7 +173,7 @@ function createLights() {
     shadowLight.position.set(150, 350, 350);
 
     // Allow shadow casting
-    shadowLight.castShadow = true;
+    shadowLight.castShadow = false;
 
     // define the visible area of the projected shadow
     shadowLight.shadow.camera.left = -400;
@@ -209,8 +209,8 @@ function createBox(dx, dy, dz, color, x, y, z, notFlatShading) {
     var geom = new THREE.BoxGeometry(dx, dy, dz);
     var mat = new THREE.MeshPhongMaterial({color:color, flatShading: notFlatShading != true});
     var box = new THREE.Mesh(geom, mat);
-    box.castShadow = true;
-    box.receiveShadow = true;
+    box.castShadow = false;
+    box.receiveShadow = false;
     box.position.set( x, y, z );
     return box;
 }
@@ -219,8 +219,8 @@ function createSphere(dx, dy, dz, color, x, y, z, notFlatShading) {
     var geometry = new THREE.SphereGeometry(dx, dy, dz);
     var material = new THREE.MeshPhongMaterial({color:color, flatShading: notFlatShading != true});
     var sphere = new THREE.Mesh(geometry, material);
-    sphere.castShadow = true;
-    sphere.receiveShadow = true;
+    sphere.castShadow = false;
+    sphere.receiveShadow = false;
     sphere.position.set( x, y, z );
     return sphere;
 }
@@ -233,8 +233,8 @@ function createCylinder(radiusTop, radiusBottom, height, radialSegments, color,
     var geom = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
     var mat = new THREE.MeshPhongMaterial({color:color, flatShading: true});
     var cylinder = new THREE.Mesh(geom, mat);
-    cylinder.castShadow = true;
-    cylinder.receiveShadow = true;
+    cylinder.castShadow = false;
+    cylinder.receiveShadow = false;
     cylinder.position.set( x, y, z );
     return cylinder;
 }
@@ -288,10 +288,13 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
     this.mesh.add(tailEnd);
 
     this.mesh.rotation.y = Math.PI/2;
+    this.mesh.position.x = 150;
+    this.mesh.position.z = 125;
     goal_orientation = Math.PI/2;
     this.color = colorString;
 
     this.orient = function(direction) {
+        this.mesh.rotation.y = this.mesh.rotation.y % (2*Math.PI);
         current_orientation = this.mesh.rotation.y;
         // Get the desired final orientation
         if (direction.z < 0) {
@@ -299,7 +302,7 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
                 goal_orientation = 3*Math.PI/4;
             }
             else if (direction.x < 0) {
-                goal_orientation = -3*Math.PI/4;
+                goal_orientation = 5*Math.PI/4;
             }
             else if (direction.x == 0) {
                 goal_orientation = Math.PI;
@@ -310,7 +313,7 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
                 goal_orientation = Math.PI/4;
             }
             else if (direction.x < 0) {
-                goal_orientation = -Math.PI/4;
+                goal_orientation = 7*Math.PI/4;
             }
             else if (direction.x == 0) {
                 goal_orientation = 0;
@@ -321,15 +324,27 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
                 goal_orientation = Math.PI/2;
             }
             else if (direction.x < 0) {
-                goal_orientation = -Math.PI/2;
+                goal_orientation = 3*Math.PI/2;
             }
         }
         // Now increment the current orientation toward the goal orientation
         if (goal_orientation < current_orientation) {
-            this.mesh.rotation.y -= (Math.PI/4)/5;
+            // Special case when rotation of 0 is involved
+            if (goal_orientation == 0 && current_orientation > Math.PI) {
+                this.mesh.rotation.y += (Math.PI/4)/5;
+            }
+            else {
+                this.mesh.rotation.y -= (Math.PI/4)/5;
+            }
         }
         else if (goal_orientation > current_orientation) {
-            this.mesh.rotation.y += (Math.PI/4)/5;
+            // Special case when rotation of 0 is involved
+            if (current_orientation == 0 && goal_orientation > Math.PI) {
+                this.mesh.rotation.y = 39*Math.PI/20;
+            }
+            else {
+                this.mesh.rotation.y += (Math.PI/4)/5;
+            }
         }
     }
 
@@ -344,172 +359,11 @@ function createChicken() {
     scene.add(chicken.mesh);
 }
 
-function createGround(pixelsToReplace, farthestPixelDisplaying) {
-    if (pixelsToReplace == "initial") {
-        ground = createBox( 250, 20, 3500, Colors.greenDark, -65, -10, -50 );
-        road = createBox(360, 10, 3500, Colors.roadBlack, 240, -10, 0);
-        ground.name = 0;
-        road.name = 0;
-
-        ground2 = createBox(120, 20, 3500, Colors.greenDark, 480, -10, -150);
-        road2 = createBox(360, 10, 3700, Colors.roadBlack, 720, -10, -150);
-        ground2.name = 1;
-        road2.name = 1;
-
-        ground3 = createBox(120, 20, 3500, Colors.greenDark, 960, -10, -150);
-        road3 = createBox(360, 10, 3700, Colors.roadBlack, 1200, -10, -150);
-        road3.name = 2;
-        ground3.name = 2;
-
-        ground4 = createBox(120, 20, 3500, Colors.greenDark, 1440, -10, -150);
-        ground4.name = 3;
-    }
-
-    else {
-        road_or_ground = Math.floor(Math.random() * 6);
-        if (road_or_ground == 5 || currRoadLanes == 5) {
-            isGround = true;
-            isRoad = false;
-        }
-        else {
-            isGround = false;
-            isRoad = true;
-            currRoadLanes += 1;
-        }
-        if (isGround == true) {
-            // Create a power up / freeze effect / moses effect
-            giveFreeze = Math.floor(Math.random() * 20);
-            givePowerUp = Math.floor(Math.random() * 30);
-            giveMoses = Math.floor(Math.random() * 40);
-
-            if (givePowerUp == 0) {
-                generatePowerUp(currRoadLanes, farthestPixelDisplaying, 'powerup');
-            }
-            if (giveFreeze == 0) {
-                generatePowerUp(currRoadLanes, farthestPixelDisplaying, 'freeze');
-            }
-            if (giveMoses == 0) {
-                generatePowerUp(currRoadLanes, farthestPixel, 'moses');
-            }
-
-            if (currRoadLanes == 0) {
-                newGround = createBox(120, 20, 3500, Colors.greenDark, farthestPixelDisplaying-60, -10, -150);
-                scene.add(newGround);
-                newGround.name = firstLanes.length-1;
-            }
-            else {
-                newRoad = createBox(currRoadLanes*120, 10, 3700, Colors.roadBlack, farthestPixelDisplaying-120-(60*currRoadLanes), -10, -150);
-                scene.add(newRoad);
-                newGround = createBox(120, 20, 3500, Colors.greenDark, farthestPixelDisplaying-60, -10, -150);
-                scene.add(newGround);
-
-                addLaneMarkers(currRoadLanes, farthestPixelDisplaying, firstLanes.length-1, false);
-
-                firstLanes.push(farthestPixelDisplaying-(120*currRoadLanes)-60);
-
-                newRoad.name = firstLanes.length-1;
-                newGround.name = firstLanes.length;
-                removePassedItems();
-                currRoadLanes = 0;
-            }
-        }
-    }
-
-    scene.add(ground);
+function createGround() {
+    road = createBox(3600, 10, 3500, Colors.roadBlack, 240, -10, 0);
     scene.add(road);
-    scene.add(ground2);
-    scene.add(road2);
-    scene.add(ground3);
-    scene.add(road3);
-    scene.add(ground4);
 }
 
-function removePassedItems() {
-    for (var i = 0; i<scene.children.length;i+=1) {
-        curr_item = scene.children[i];
-        if (scene.children[i].name <= firstLanes.length-11 && typeof(scene.children[i].name) == 'number') {
-            scene.remove(scene.children[i]);
-            i -= 1;
-        }
-    }
-    for (var i = cars.length-1; i>=0; i-=1) {
-        if (cars[i].name <= camera.position.x - 1500 && typeof(cars[i].name) == 'number') {
-            scene.remove(cars[i].mesh);
-            cars.splice(i, 1);
-        } 
-    }
-    for (var i = markers.length-1; i>=0; i-=1) {
-        if (markers[i].name <= firstLanes.length-12 && typeof(markers[i].name) == 'number') {
-            scene.remove(markers[i]);
-            markers.splice(i, 1);
-        } 
-    }
-    for (var i = powerUps.length-1; i>=0; i-=1) {
-        try {
-            name = powerUps[i].name1;
-        }
-        catch(error) {
-            name = powerUps[i].name;
-        }
-        if (name <= firstLanes.length-11 && typeof(name) == 'number') {
-            scene.remove(powerUps[i].mesh);
-            powerUps.splice(i, 1);
-        }
-    }
-}
-
-function replaceChicken(color, colorString) {
-    x = chicken.mesh.position.x;
-    y = chicken.mesh.position.y;
-    z = chicken.mesh.position.z;
-    scene.remove(chicken.mesh);
-    chicken = new Chicken(color, colorString);
-    chicken.mesh.position.x = x;
-    chicken.mesh.position.y = y;
-    chicken.mesh.position.z = z;
-    scene.add(chicken.mesh);
-}
-
-function generatePowerUp(currRoadLanes, farthestPixelDisplaying, type) {
-    posOrNeg = Math.floor(Math.random() * 1)
-    if (posOrNeg == 0) {
-       factor = 1;
-    }
-    else {
-        factor = -1;
-    }
-
-    if (type == 'powerup') {
-        powerUp = new createPowerUp();
-        powerUp.mesh.position.y = 0;
-        powerUp.mesh.position.z = factor * Math.floor(Math.random() * 200);
-        powerUp.mesh.position.x = farthestPixelDisplaying-60-(120*Math.floor(Math.random() * currRoadLanes));
-        powerUp.name = firstLanes.length-3;
-        powerUps.push(powerUp);
-        scene.add(powerUp.mesh);
-    }
-    if (type=='moses') {
-        moses = new createMosesEffect();
-        moses.mesh.position.y = 10;
-        moses.mesh.position.z = factor * Math.floor(Math.random() * 200);
-        moses.mesh.position.x = farthestPixelDisplaying-60-(120*Math.floor(Math.random() * currRoadLanes));
-        moses.name = 'moses';
-        moses.name1 = firstLanes.length-3;
-        powerUps.push(moses);
-        scene.add(moses.mesh);
-    }
-
-    if (type=='freeze') {
-        iceCube = new createFreezeEffect();
-        iceCube.mesh.position.y = 20;
-        iceCube.mesh.position.z = factor * Math.floor(Math.random() * 200);
-        iceCube.mesh.position.x = farthestPixelDisplaying-60-(120*Math.floor(Math.random() * currRoadLanes));
-        iceCube.name = 'freeze';
-        iceCube.name1 = firstLanes.length-3;
-        powerUps.push(iceCube);
-        scene.add(iceCube.mesh);
-    }
-}
 function checkCollisions(isInvincible) {
     chicken_z = chicken.mesh.position.z
     chicken_x = chicken.mesh.position.x;
@@ -522,43 +376,7 @@ function checkCollisions(isInvincible) {
                 gameOver();
             }
         }
-    }
-    for (var i =0; i<powerUps.length; i+=1) {
-        powerUp_z = powerUps[i].mesh.position.z;
-        powerUp_x = powerUps[i].mesh.position.x;
-        if ((chicken_z >= powerUp_z - powerUps[i].bodySize/2) && (chicken_z <= powerUp_z + powerUps[i].bodySize/2) && (powerUp_x == chicken_x)) {
-            name = powerUps[i].name;
-            scene.remove(powerUps[i].mesh);
-            powerUps.splice(i, 1);
-
-            var invincibleSeconds = 7.5;
-            if (name == 'moses') {
-                invincibleMoses = 60 * invincibleSeconds;
-                color = Colors.green;
-                colorString = 'green';
-                // Makes sure that powerup effects don't stack.
-                slowDown = 0;
-                invincible = 0;
-            }
-            else if (name == 'freeze') {
-                slowDown = 60*invincibleSeconds;
-                color = Colors.lightBlue;
-                colorString = 'lightBlue';
-                // Makes sure that powerup effects don't stack.
-                invincible = 0;
-                invincibleMoses = 0;
-            }
-            else if (typeof(eval(name)) == 'number') {
-                invincible = 60 * invincibleSeconds;
-                color = Colors.golden;
-                colorString = 'golden';
-                // Makes sure that powerup effects don't stack.
-                slowDown = 0;
-                invincibleMoses = 0;
-            }
-            replaceChicken(color, colorString);
-        }
-    }   
+    }  
 }
 
 function gameOver(){
@@ -580,13 +398,6 @@ var previousFreeze = 0;
 
 function loop(){
     var chickenDirection = new THREE.Vector3(0, 0, 0);
-
-    // check to see whether we need to generate new ground
-    if (camera.position.x >= initialCameraPosition + 120) {
-        createGround(120, farthestPixel+120);
-        initialCameraPosition = Math.floor(camera.position.x / 120) * 120;
-        farthestPixel += 120;
-    }
 
     // Update the chicken's position if the user is pressing keys
     if (movingLeft == true ) {
@@ -624,16 +435,11 @@ function loop(){
         document.getElementById("displayedHighScore").innerHTML = highscore;    
     }
 
-    // NEED TO MAKE THE CAMERA FOLLOW THE CHARACTER
-    /*if (moveCamera) {
-        if (chicken.mesh.position.x > camera.position.x + 360) {
-            camera.position.x += 5;
-        }
-        else {
-            camera.position.x += 2.5;
-        }
-    }
-    */
+    // Camera follows the character
+    camera.position.x += back_or_forward*50;
+    camera.position.z += left_or_right*50;
+
+    camera.lookAt(chicken.mesh.position.x, chicken.mesh.position.y, chicken.mesh.position.z);
     // render the scene
     renderer.render(scene, camera);
 
