@@ -42,6 +42,11 @@ if (highscore == null) {
     highscore = 0;
 }
 
+function precisionRound(number, precision) {
+  var factor = Math.pow(10, precision);
+  return Math.round(number * factor) / factor;
+}
+
 /********** End step 1 **********/
 
 function init() {
@@ -54,6 +59,8 @@ function init() {
     // add the objects
 
     createGround();
+
+    createTrees();
 
     createChicken();
 
@@ -293,51 +300,65 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
     goal_orientation = Math.PI/2;
     this.color = colorString;
 
-    this.orient = function(direction) {
+    this.orient = function(direction, isFiring) {
         this.mesh.rotation.y = this.mesh.rotation.y % (2*Math.PI);
         current_orientation = this.mesh.rotation.y;
         // Get the desired final orientation
-        if (direction.z < 0) {
-            if (direction.x > 0) {
-                goal_orientation = 3*Math.PI/4;
+        if (! isFiring) {
+            if (direction.z < 0) {
+                if (direction.x > 0) {
+                    goal_orientation = 3*Math.PI/4;
+                }
+                else if (direction.x < 0) {
+                    goal_orientation = 5*Math.PI/4;
+                }
+                else if (direction.x == 0) {
+                    goal_orientation = Math.PI;
+                }
             }
-            else if (direction.x < 0) {
-                goal_orientation = 5*Math.PI/4;
+            else if (direction.z > 0) {
+                if (direction.x > 0) {
+                    goal_orientation = Math.PI/4;
+                }
+                else if (direction.x < 0) {
+                    goal_orientation = 7*Math.PI/4;
+                }
+                else if (direction.x == 0) {
+                    goal_orientation = 0;
+                }
             }
-            else if (direction.x == 0) {
-                goal_orientation = Math.PI;
+            else if (direction.z == 0) {
+                if (direction.x > 0) {
+                    goal_orientation = Math.PI/2;
+                }
+                else if (direction.x < 0) {
+                    goal_orientation = 3*Math.PI/2;
+                }
             }
         }
-        else if (direction.z > 0) {
-            if (direction.x > 0) {
-                goal_orientation = Math.PI/4;
-            }
-            else if (direction.x < 0) {
-                goal_orientation = 7*Math.PI/4;
-            }
-            else if (direction.x == 0) {
-                goal_orientation = 0;
-            }
-        }
-        else if (direction.z == 0) {
-            if (direction.x > 0) {
-                goal_orientation = Math.PI/2;
-            }
-            else if (direction.x < 0) {
-                goal_orientation = 3*Math.PI/2;
-            }
-        }
+
         // Now increment the current orientation toward the goal orientation
         if (goal_orientation < current_orientation) {
-            // Special case when rotation of 0 is involved
-            if (goal_orientation == 0 && current_orientation > Math.PI) {
-                this.mesh.rotation.y += (Math.PI/4)/5;
+            difference = current_orientation - goal_orientation;
+            if (difference > Math.PI) {
+                // Edge case in which rotation difference is smaller than the increment interval
+                if (difference % Math.PI/20 != 0) {
+                    this.mesh.rotation.y += (current_orientation - (Math.PI/20 * Math.round(current_orientation / (Math.PI/20))));
+                }
+                else {
+                    this.mesh.rotation.y += Math.PI/20;
+                }
+            }
+            // Edge case in which rotation difference is smaller than the increment interval
+            else if (difference < Math.PI/20) {
+                this.mesh.rotation.y -= difference;
             }
             else {
-                this.mesh.rotation.y -= (Math.PI/4)/5;
+                this.mesh.rotation.y -= Math.PI/20;
             }
         }
-        else if (goal_orientation > current_orientation) {
+                
+        if (goal_orientation > current_orientation) {
             // Special case when rotation of 0 is involved
             if (current_orientation == 0 && goal_orientation > Math.PI) {
                 this.mesh.rotation.y = 39*Math.PI/20;
@@ -347,10 +368,148 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
             }
         }
     }
+    // If the user is firing, character should face in direction of click regardless of movement direction
 
-    this.update = function(direction) {
-        this.orient(direction);
+    this.update = function(direction, isFiring) {
+        this.orient(direction, isFiring);
         this.mesh.position.addScaledVector(direction, 50);
+        }
+    }
+
+function Tree() {
+
+    this.mesh = new THREE.Object3D();
+    var top = createCylinder( 1, 30, 30, 4, Colors.green, 0, 90, 0 );
+    var mid = createCylinder( 1, 40, 40, 4, Colors.green, 0, 70, 0 );
+    var bottom = createCylinder( 1, 50, 50, 4, Colors.green, 0, 40, 0 );
+    var trunk = createCylinder( 10, 10, 30, 32, Colors.brownDark, 0, 0, 0 );
+
+    this.mesh.add( top );
+    this.mesh.add( mid );
+    this.mesh.add( bottom );
+    this.mesh.add( trunk );
+
+}
+
+function createTrees() {
+    for (var i = 0; i<8; i+=1) {
+
+        // Trees on bottom
+        var tree = new Tree();
+        var tree2 = new Tree();
+
+        // Trees on top
+        var tree3 = new Tree();
+        var tree4 = new Tree();
+        var tree11 = new Tree();
+        var tree12 = new Tree();
+
+        // Trees on left
+        var tree5 = new Tree();
+        var tree6 = new Tree();
+
+        var tree13 = new Tree();
+        var tree14 = new Tree();
+
+        var tree9 = new Tree();
+        var tree17 = new Tree();
+
+        // Trees on right
+        var tree7 = new Tree();
+        var tree8 = new Tree();
+
+        var tree15 = new Tree();
+        var tree16 = new Tree();
+
+        var tree10 = new Tree();
+        var tree18 = new Tree();
+
+        pos = i*250;
+
+        // Trees on bottom
+        scene.add(tree.mesh);
+        tree.mesh.position.set(-970, 40, pos);
+        tree.mesh.scale.set(3, 3, 3);
+
+        // Trees on top
+        scene.add(tree3.mesh);
+        tree3.mesh.position.set(1470, 40, pos);
+        tree3.mesh.scale.set(3, 3, 3);
+
+        scene.add(tree11.mesh);
+        tree11.mesh.position.set(1720, 40, pos);
+        tree11.mesh.scale.set(3, 3, 3); 
+         
+        // Trees on left
+        scene.add(tree5.mesh);
+        tree5.mesh.position.set(pos, 40, -1220);
+        tree5.mesh.scale.set(3, 3, 3);
+
+        scene.add(tree13.mesh);
+        tree13.mesh.position.set(pos, 40, -1470);
+        tree13.mesh.scale.set(3, 3, 3);
+
+        scene.add(tree9.mesh);
+        tree9.mesh.position.set(pos, 40, -1720);
+        tree9.mesh.scale.set(3, 3, 3);
+
+        // Trees on right
+        scene.add(tree6.mesh);
+        tree6.mesh.position.set(pos, 40, 1220);
+        tree6.mesh.scale.set(3, 3, 3);
+
+        scene.add(tree15.mesh);
+        tree15.mesh.position.set(pos, 40, 1470);
+        tree15.mesh.scale.set(3, 3, 3);
+        
+        scene.add(tree10.mesh);
+        tree10.mesh.position.set(pos, 40, 1720);
+        tree10.mesh.scale.set(3, 3, 3);
+
+
+        if (i!=0) {
+            // Trees on bottom
+            scene.add(tree2.mesh);
+            tree2.mesh.position.set(-970, 40, -pos);
+            tree2.mesh.scale.set(3, 3, 3);
+
+            // Trees on top
+            scene.add(tree4.mesh);
+            tree4.mesh.position.set(1470, 40, -pos);
+            tree4.mesh.scale.set(3, 3, 3);
+
+            scene.add(tree12.mesh);
+            tree12.mesh.position.set(1720, 40, -pos);
+            tree12.mesh.scale.set(3, 3, 3);            
+
+            if (i < 6) {
+                // Trees on left
+                scene.add(tree7.mesh);
+                tree7.mesh.position.set(-pos, 40, -1220);
+                tree7.mesh.scale.set(3, 3, 3);
+
+                scene.add(tree14.mesh);
+                tree14.mesh.position.set(-pos, 40, -1470);
+                tree14.mesh.scale.set(3, 3, 3);
+                
+                scene.add(tree17.mesh);
+                tree17.mesh.position.set(-pos, 40, -1720);
+                tree17.mesh.scale.set(3, 3, 3);
+
+                // Trees on right
+                scene.add(tree8.mesh);
+                tree8.mesh.position.set(-pos, 40, 1220);
+                tree8.mesh.scale.set(3, 3, 3);
+
+                scene.add(tree16.mesh);
+                tree16.mesh.position.set(-pos, 40, 1470);
+                tree16.mesh.scale.set(3, 3, 3); 
+
+                scene.add(tree18.mesh);
+                tree18.mesh.position.set(-pos, 40, 1720);
+                tree18.mesh.scale.set(3, 3, 3);               
+            }
+        }
     }
 }
 
@@ -360,23 +519,19 @@ function createChicken() {
 }
 
 function createGround() {
-    road = createBox(3600, 10, 3500, Colors.roadBlack, 240, -10, 0);
-    scene.add(road);
-}
+    road = createBox(3500, 10, 3500, Colors.roadBlack, 240, -10, 0);
+    // Add lines for perspective
+    for (var i = 1; i < 14; i+=1) {
+        position = -1750 + (250*i)
+        crissCross = createBox(3500, 2, 2, Colors.white, 240, 1, 0);
+        crissCross.position.z = position;
+        scene.add(crissCross);
 
-function checkCollisions(isInvincible) {
-    chicken_z = chicken.mesh.position.z
-    chicken_x = chicken.mesh.position.x;
-    if (! isInvincible) {
-        for (var i = 0; i<cars.length;i+=1) {
-            car_z = cars[i].mesh.position.z;
-            car_x = cars[i].mesh.position.x;
-            car_y = cars[i].mesh.position.y;
-            if ((chicken_z >= car_z - cars[i].bodySize/2) && (chicken_z <= car_z + cars[i].bodySize/2) && (car_x == chicken_x) && (car_y == 18)) {
-                gameOver();
-            }
-        }
-    }  
+        crissCross2 = createBox(2, 2, 3500, Colors.white, 0, 1, 0);
+        crissCross2.position.x = position + 250;
+        scene.add(crissCross2);
+    }
+    scene.add(road);
 }
 
 function gameOver(){
@@ -390,30 +545,25 @@ var movingLeft = false;
 var movingRight = false;
 var movingForward = false;
 var movingBackward = false;
-var initialCameraPosition = -150;
-var farthestPixel = 1500;
-var previousInvincibleMoses = 0;
-var previousInvincible = 0;
-var previousFreeze = 0;
-
+var isFiring = false;
 function loop(){
     var chickenDirection = new THREE.Vector3(0, 0, 0);
 
     // Update the chicken's position if the user is pressing keys
-    if (movingLeft == true ) {
+    if (movingLeft == true && chicken.mesh.position.z >= -1068) {
         left_or_right = -0.07;
     }
-    else if (movingRight == true) {
+    else if (movingRight == true && chicken.mesh.position.z <= 1073) {
         left_or_right = 0.07;
     }
     else {
         left_or_right = 0;
     }
 
-    if (movingForward == true) {
+    if (movingForward == true && chicken.mesh.position.x <= 1350) {
         back_or_forward = 0.07;
     }
-    else if (movingBackward == true) {
+    else if (movingBackward == true && chicken.mesh.position.x >= -798) {
         back_or_forward = -0.07;
     }
     else {
@@ -422,7 +572,7 @@ function loop(){
 
     var chickenDirection = new THREE.Vector3(back_or_forward, 0, left_or_right);
 
-    chicken.update(chickenDirection);
+    chicken.update(chickenDirection, isFiring);
 
     // Update score
     // score = SOMETHING ELSE
@@ -447,10 +597,10 @@ function loop(){
     requestAnimationFrame(loop);
 }
 
-var left = 37;
-var right = 39;
-var up = 38;
-var down = 40;
+var left = 65;
+var right = 68;
+var up = 87;
+var down = 83;
 
 function createControls() {
     document.addEventListener(
@@ -492,6 +642,22 @@ function createControls() {
             if (key == down) {
                 movingBackward = false;
             }
+        }
+    );
+
+    document.addEventListener (
+        'mousedown', 
+        function(ev) {
+            isFiring = true;
+            mouse_x_Coordinate = ev.pageX;
+            mouse_y_Coordinate = ev.pageY;
+        }
+    );
+
+    document.addEventListener (
+        'mouseup', 
+        function(ev) {
+            isFiring = false;
         }
     );
 }
