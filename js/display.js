@@ -301,7 +301,12 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
     this.color = colorString;
 
     this.orient = function(direction, isFiring) {
-        this.mesh.rotation.y = this.mesh.rotation.y % (2*Math.PI);
+        if (this.mesh.rotation.y > (2*Math.PI)) {
+            this.mesh.rotation.y = this.mesh.rotation.y % (2*Math.PI);
+        }
+        else if (this.mesh.rotation.y < 0) {
+            this.mesh.rotation.y = (2*Math.PI) + this.mesh.rotation.y;
+        }
         current_orientation = this.mesh.rotation.y;
         // Get the desired final orientation
         if (! isFiring) {
@@ -336,39 +341,52 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
                 }
             }
         }
-
+        // If the user is firing, character should face in direction of click regardless of movement direction
+        
+        
         // Now increment the current orientation toward the goal orientation
+        difference = current_orientation - goal_orientation;
+
         if (goal_orientation < current_orientation) {
-            difference = current_orientation - goal_orientation;
             if (difference > Math.PI) {
                 // Edge case in which rotation difference is smaller than the increment interval
-                if (difference % Math.PI/20 != 0) {
-                    this.mesh.rotation.y += (current_orientation - (Math.PI/20 * Math.round(current_orientation / (Math.PI/20))));
+                if (difference % (Math.PI/20) != 0) {
+                    this.mesh.rotation.y += Math.abs(current_orientation - (Math.PI/20 * Math.ceil(current_orientation / (Math.PI/20))));
                 }
                 else {
                     this.mesh.rotation.y += Math.PI/20;
                 }
             }
             // Edge case in which rotation difference is smaller than the increment interval
-            else if (difference < Math.PI/20) {
-                this.mesh.rotation.y -= difference;
+            else if (difference % (Math.PI/20) != 0) {
+                this.mesh.rotation.y -= (current_orientation - (Math.PI/20 * Math.floor(current_orientation / (Math.PI/20))));
             }
             else {
                 this.mesh.rotation.y -= Math.PI/20;
             }
         }
-                
+
         if (goal_orientation > current_orientation) {
-            // Special case when rotation of 0 is involved
-            if (current_orientation == 0 && goal_orientation > Math.PI) {
-                this.mesh.rotation.y = 39*Math.PI/20;
+            if (difference < -Math.PI) {
+                // Edge case in which rotation difference is smaller than the increment interval
+                if (difference % (Math.PI/20) != 0) {
+                    this.mesh.rotation.y -= (current_orientation - (Math.PI/20 * Math.floor(current_orientation / (Math.PI/20))));
+                }
+                else {
+                    this.mesh.rotation.y -= Math.PI/20;
+                }
             }
+            
+            // Edge case in which rotation difference is smaller than the increment interval
+            else if (difference % (Math.PI/20) != 0) {
+                this.mesh.rotation.y += Math.abs(current_orientation - (Math.PI/20 * Math.ceil(current_orientation / (Math.PI/20))))
+            }
+
             else {
-                this.mesh.rotation.y += (Math.PI/4)/5;
+                this.mesh.rotation.y += Math.PI/20;
             }
         }
     }
-    // If the user is firing, character should face in direction of click regardless of movement direction
 
     this.update = function(direction, isFiring) {
         this.orient(direction, isFiring);
@@ -546,6 +564,7 @@ var movingRight = false;
 var movingForward = false;
 var movingBackward = false;
 var isFiring = false;
+
 function loop(){
     var chickenDirection = new THREE.Vector3(0, 0, 0);
 
