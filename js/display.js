@@ -56,6 +56,8 @@ function init() {
     // add the lights
     createLights();
 
+    createControls();
+
     // add the objects
 
     createGround();
@@ -64,7 +66,6 @@ function init() {
 
     createChicken();
 
-    createControls();
     // start a loop that will update the objects' positions
     // and render the scene on each frame
 
@@ -113,7 +114,9 @@ function createScene() {
     // Set the position of the camera
     
     camera.position.x = -150;
+    //camera.position.x = 150;
     camera.position.z = 150;
+    //camera.position.z = 125;
     camera.position.y = 500;
     camera.lookAt(150, 0, 125);
 
@@ -342,25 +345,34 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
             }
         }
         // If the user is firing, character should face in direction of click regardless of movement direction
-        
-        
+        else { 
+
+            // x axis goes from 333 to 1276 (left to right), y axis goes from 0 to 633 (top to bottom)
+            xLeg = mouse_x_Coordinate - 970;
+            yLeg = -(mouse_y_Coordinate - 316.5);
+
+            angle = Math.atan(yLeg / xLeg);
+
+            // Calculation for the second and third quadrants
+            if ((xLeg < 0 && yLeg > 0) || (xLeg < 0 && yLeg < 0)) {
+                angle = Math.PI + angle;
+            }
+
+            // Calculation for the fourth quadrant
+            if (xLeg > 0 && yLeg < 0) {
+                angle = (2*Math.PI) + angle;
+            }
+
+            goal_orientation = Math.PI/20 * Math.round(angle/(Math.PI/20));
+        }
+
         // Now increment the current orientation toward the goal orientation
         difference = current_orientation - goal_orientation;
 
         if (goal_orientation < current_orientation) {
             if (difference > Math.PI) {
-                // Edge case in which rotation difference is smaller than the increment interval
-                if (difference % (Math.PI/20) != 0) {
-                    this.mesh.rotation.y += Math.abs(current_orientation - (Math.PI/20 * Math.ceil(current_orientation / (Math.PI/20))));
-                }
-                else {
                     this.mesh.rotation.y += Math.PI/20;
                 }
-            }
-            // Edge case in which rotation difference is smaller than the increment interval
-            else if (difference % (Math.PI/20) != 0) {
-                this.mesh.rotation.y -= (current_orientation - (Math.PI/20 * Math.floor(current_orientation / (Math.PI/20))));
-            }
             else {
                 this.mesh.rotation.y -= Math.PI/20;
             }
@@ -368,18 +380,7 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
 
         if (goal_orientation > current_orientation) {
             if (difference < -Math.PI) {
-                // Edge case in which rotation difference is smaller than the increment interval
-                if (difference % (Math.PI/20) != 0) {
-                    this.mesh.rotation.y -= (current_orientation - (Math.PI/20 * Math.floor(current_orientation / (Math.PI/20))));
-                }
-                else {
-                    this.mesh.rotation.y -= Math.PI/20;
-                }
-            }
-            
-            // Edge case in which rotation difference is smaller than the increment interval
-            else if (difference % (Math.PI/20) != 0) {
-                this.mesh.rotation.y += Math.abs(current_orientation - (Math.PI/20 * Math.ceil(current_orientation / (Math.PI/20))))
+                this.mesh.rotation.y -= Math.PI/20;
             }
 
             else {
@@ -620,6 +621,7 @@ var left = 65;
 var right = 68;
 var up = 87;
 var down = 83;
+var mouseDown = false;
 
 function createControls() {
     document.addEventListener(
@@ -665,9 +667,21 @@ function createControls() {
     );
 
     document.addEventListener (
+        'mousemove', 
+        function(ev) {
+            if (mouseDown) {
+                isFiring = true;
+                mouse_x_Coordinate = ev.pageX;
+                mouse_y_Coordinate = ev.pageY;
+            }
+        }
+    );
+
+    document.addEventListener (
         'mousedown', 
         function(ev) {
             isFiring = true;
+            mouseDown = true;
             mouse_x_Coordinate = ev.pageX;
             mouse_y_Coordinate = ev.pageY;
         }
@@ -677,8 +691,10 @@ function createControls() {
         'mouseup', 
         function(ev) {
             isFiring = false;
+            mouseDown = false;
         }
     );
+
 }
 window.addEventListener('load', init, false);
 // init();  // uncomment for JSFiddle, wraps code in onLoad eventListener
