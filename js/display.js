@@ -411,7 +411,6 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
                 this.mesh.rotation.y += Math.PI/20;
             }
         }
-        //console.log(goal_orientation * 180/Math.PI);
     }
 
     this.update = function(direction, isFiring) {
@@ -447,7 +446,6 @@ function Zombie() {
     var leftPupil = createSphere(3, 20, 20, Colors.golden, -20, -2, 10);
     var rightPupil = createSphere(3, 20, 20, Colors.golden, -20, -2, -10);
     var bottomTeeth = createBox(2, 3, 18, Colors.silver, -21.5, -23, 0);
-    var topTeeth = createBox(2, 4, 3, Colors.silver, -21.5, -12, 2);
     var mainBody = createBox(35, 30, 35, Colors.darkBlue, 0, -45, 0);
     var butt = createBox(35, 10, 35, Colors.brownDark, 0, -65, 0);
     var leftArm = createBox(7, 7.5, 7.5, Colors.greenDark, -23, -40, -10);
@@ -459,8 +457,6 @@ function Zombie() {
     mouth.rotation.y = 3*Math.PI/2;
     leftEyeWithoutPupil.rotation.y = 3*Math.PI/2;
     rightEyeWithoutPupil.rotation.y = 3*Math.PI/2;
-
-    //this.mesh.rotation.y = Math.PI/4;
     
     this.mesh.add(hair);
     this.mesh.add(mainHead);
@@ -470,7 +466,6 @@ function Zombie() {
     this.mesh.add(leftPupil);
     this.mesh.add(rightPupil);
     this.mesh.add(bottomTeeth);
-    this.mesh.add(topTeeth);
     this.mesh.add(mainBody);
     this.mesh.add(butt);
     this.mesh.add(leftArm);
@@ -479,6 +474,7 @@ function Zombie() {
     this.mesh.add(rightLeg);
 
     this.final_orientation = 0;
+    this.rotateAmount = 0.01;
 
     this.orient = function() {
 
@@ -563,9 +559,25 @@ function Zombie() {
         }        
 
         delta_position = new THREE.Vector3(y, 0, x);
-        //this.mesh.position.z += 20;
-        //console.log(delta_position);
-        this.mesh.position.addScaledVector(delta_position, 1.5);
+
+        this.mesh.position.addScaledVector(delta_position, 1);
+}
+
+    this.headRotate = function() {
+        // Rotate function for aesthetic animation
+        if (this.final_orientation <= Math.PI/4 || this.final_orientation >= 7*Math.PI/4 || this.final_orientation >=3*Math.PI/4 && this.final_orientation <= 5*Math.PI/4) {
+            this.mesh.rotation.z += this.rotateAmount;
+            if (Math.abs(this.mesh.rotation.z) <= Math.PI/16 + 0.1 && Math.abs(this.mesh.rotation.z) >= Math.PI/16 - 0.1) {
+                this.rotateAmount = -this.rotateAmount;
+            }
+        }
+        else {
+            this.mesh.rotation.x += this.rotateAmount;
+            if (Math.abs(this.mesh.rotation.x) <= Math.PI/16 + 0.1 && Math.abs(this.mesh.rotation.x) >= Math.PI/16 - 0.1) {
+                this.rotateAmount = -this.rotateAmount;
+            }
+        }
+
     }
 }
 
@@ -753,7 +765,7 @@ var isFiring = false;
 
 function loop(){
     var chickenDirection = new THREE.Vector3(0, 0, 0);
-
+    zombie.headRotate();
     zombie.update();
     // Update the chicken's position if the user is pressing keys
     if (movingLeft == true && chicken.mesh.position.z >= -1068) {
