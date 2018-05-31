@@ -36,15 +36,10 @@ var Colors = {
  */
 
 var score = 0;
-var highscore = localStorage.getItem("highscore");
-
+//var highscore = localStorage.getItem("highscore");
+var highscore = 0;
 if (highscore == null) {
     highscore = 0;
-}
-
-function precisionRound(number, precision) {
-  var factor = Math.pow(10, precision);
-  return Math.round(number * factor) / factor;
 }
 
 /********** End step 1 **********/
@@ -66,6 +61,8 @@ function init() {
 
     createChicken();
 
+    createZombie();
+    //createBullet();
     // start a loop that will update the objects' positions
     // and render the scene on each frame
 
@@ -116,8 +113,9 @@ function createScene() {
     camera.position.x = -150;
     //camera.position.x = 150;
     camera.position.z = 150;
-    //camera.position.z = 125;
+    //camera.position.z = 200;
     camera.position.y = 500;
+    //camera.position.y = 50;
     camera.lookAt(150, 0, 125);
 
     //Debugging position for removing passed
@@ -233,6 +231,26 @@ function createSphere(dx, dy, dz, color, x, y, z, notFlatShading) {
     sphere.receiveShadow = false;
     sphere.position.set( x, y, z );
     return sphere;
+}
+
+function createCircle(dr, x, y, z, color, thetaStart, thetaLength, notFlatShading) {
+    var geometry = new THREE.CircleGeometry(dr, 50, thetaStart, thetaLength);
+    var material = new THREE.MeshPhongMaterial( { color: color, flatShading: notFlatShading != true});
+    var circle = new THREE.Mesh(geometry, material );
+    circle.castShadow = false;
+    circle.receiveShadow = false;
+    circle.position.set( x, y, z);
+    return circle
+}
+
+function createRing(innerRadius, outerRadius, x, y, z, color) {
+    var geometry = new THREE.RingGeometry(innerRadius, outerRadius, 50 );
+    var material = new THREE.MeshPhongMaterial( { color: color});
+    var ring = new THREE.Mesh( geometry, material );
+    ring.castShadow = false;
+    ring.receiveShadow = false;
+    ring.position.set( x, y, z);
+    return ring
 }
 
 /**
@@ -395,6 +413,123 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
         }
     }
 
+function Bullet() {
+
+    this.mesh = new THREE.Object3D();
+
+    var bulletShell = createBox(15, 1, 5, Colors.yellow, 0, 60, 0);
+    var bulletLight = new THREE.PointLight( 0xffcc00, 3, 100 );
+    var bulletLight2 = new THREE.PointLight( 0xffcc00, 3, 100 )
+
+    bulletLight.position.set(11, 63, 0);
+    bulletLight2.position.set(-11, 63, 0);
+
+    this.mesh.add(bulletShell);
+    this.mesh.add(bulletLight);
+    this.mesh.add(bulletLight2);
+}
+
+function Zombie() {
+    this.mesh = new THREE.Object3D();
+
+    var mainHead = createBox(40, 60, 50, Colors.greenDark, 0, 0, 0);
+    var hair = createBox(43, 24, 53, Colors.black, 0, 19, 0);
+    var mouth = createCircle(15, -21, -25, 0, Colors.black, 0, Math.PI);
+    var leftEyeWithoutPupil = createRing(3, 7, -21, -2, 10, Colors.red);
+    var rightEyeWithoutPupil = createRing(3, 7, -21, -2, -10, Colors.red);
+    var leftPupil = createSphere(3, 20, 20, Colors.golden, -20, -2, 10);
+    var rightPupil = createSphere(3, 20, 20, Colors.golden, -20, -2, -10);
+    var bottomTeeth = createBox(2, 3, 18, Colors.silver, -21.5, -23, 0);
+    var topTeeth = createBox(2, 4, 3, Colors.silver, -21.5, -12, 2);
+    var mainBody = createBox(35, 30, 35, Colors.darkBlue, 0, -45, 0);
+    var butt = createBox(35, 10, 35, Colors.brownDark, 0, -65, 0);
+    var leftArm = createBox(7, 7.5, 7.5, Colors.greenDark, -23, -40, -10);
+    var rightArm = createBox(7, 7.5, 7.5, Colors.greenDark, -23, -40, 10);
+    var leftLeg = createBox(10, 10, 10, Colors.black, 0, -75, -8);
+    var rightLeg = createBox(10, 10, 10, Colors.black, 0, -75, 8);
+
+    
+    mouth.rotation.y = 3*Math.PI/2;
+    leftEyeWithoutPupil.rotation.y = 3*Math.PI/2;
+    rightEyeWithoutPupil.rotation.y = 3*Math.PI/2;
+
+    //this.mesh.rotation.y = Math.PI/4;
+    
+    this.mesh.add(hair);
+    this.mesh.add(mainHead);
+    this.mesh.add(mouth);
+    this.mesh.add(leftEyeWithoutPupil);
+    this.mesh.add(rightEyeWithoutPupil);
+    this.mesh.add(leftPupil);
+    this.mesh.add(rightPupil);
+    this.mesh.add(bottomTeeth);
+    this.mesh.add(topTeeth);
+    this.mesh.add(mainBody);
+    this.mesh.add(butt);
+    this.mesh.add(leftArm);
+    this.mesh.add(rightArm);
+    this.mesh.add(leftLeg);
+    this.mesh.add(rightLeg);
+
+
+    this.orient = function() {
+
+        if (this.mesh.rotation.y > (2*Math.PI)) {
+            this.mesh.rotation.y = this.mesh.rotation.y % (2*Math.PI);
+        }
+        else if (this.mesh.rotation.y < 0) {
+            this.mesh.rotation.y = (2*Math.PI) + this.mesh.rotation.y;
+        }
+        current_orientation = this.mesh.rotation.y;
+
+        // Get the desired final orientation, toward the character
+        xLeg = chicken.mesh.position.z - this.mesh.position.z;
+        yLeg = chicken.mesh.position.x - this.mesh.position.x;
+
+        if (xLeg != 0 && yLeg != 0) {
+            angle = Math.atan(yLeg / xLeg);
+
+            // Calculation for the second and third quadrants
+            if ((xLeg < 0 && yLeg > 0) || (xLeg < 0 && yLeg < 0)) {
+                angle = Math.PI + angle;
+            }
+
+            // Calculation for the fourth quadrant
+            if (xLeg > 0 && yLeg < 0) {
+                angle = (2*Math.PI) + angle;
+            }
+
+            final_orientation = (Math.PI/20 * Math.round(angle/(Math.PI/20)) + Math.PI/2) % (2*Math.PI);
+
+            // Now increment the current orientation toward the goal orientation
+            difference = current_orientation - final_orientation;
+
+            if (final_orientation < current_orientation) {
+                if (difference > Math.PI) {
+                        this.mesh.rotation.y += Math.PI/20;
+                    }
+                else {
+                    this.mesh.rotation.y -= Math.PI/20;
+                }
+            }
+
+            if (final_orientation > current_orientation) {
+                if (difference < -Math.PI) {
+                    this.mesh.rotation.y -= Math.PI/20;
+                }
+
+                else {
+                    this.mesh.rotation.y += Math.PI/20;
+                }
+            }
+        }
+    }
+
+    this.update = function() {
+        this.orient();
+    }
+}
+
 function Tree() {
 
     this.mesh = new THREE.Object3D();
@@ -408,6 +543,12 @@ function Tree() {
     this.mesh.add( bottom );
     this.mesh.add( trunk );
 
+}
+
+function createZombie() {
+    zombie = new Zombie();
+    scene.add(zombie.mesh);
+    zombie.mesh.position.set(160, 75, -50);
 }
 
 function createTrees() {
@@ -537,6 +678,11 @@ function createChicken() {
     scene.add(chicken.mesh);
 }
 
+function createBullet() {
+    bullet = new Bullet();
+    scene.add(bullet.mesh);
+}
+
 function createGround() {
     road = createBox(3500, 10, 3500, Colors.roadBlack, 240, -10, 0);
     // Add lines for perspective
@@ -568,7 +714,8 @@ var isFiring = false;
 
 function loop(){
     var chickenDirection = new THREE.Vector3(0, 0, 0);
-
+    //zombie.mesh.rotation.x += 0.01;
+    zombie.update();
     // Update the chicken's position if the user is pressing keys
     if (movingLeft == true && chicken.mesh.position.z >= -1068) {
         left_or_right = -0.07;
