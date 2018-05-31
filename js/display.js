@@ -36,6 +36,7 @@ var Colors = {
  */
 
 var score = 0;
+var resized = false;
 //var highscore = localStorage.getItem("highscore");
 var highscore = 0;
 if (highscore == null) {
@@ -157,6 +158,7 @@ function handleWindowResize() {
     renderer.setSize(WIDTH, HEIGHT);
     camera.aspect = WIDTH / HEIGHT;
     camera.updateProjectionMatrix();
+    resized = true;
 }
 
 /**
@@ -366,7 +368,11 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
         else { 
 
             // x axis goes from 333 to 1276 (left to right), y axis goes from 0 to 633 (top to bottom)
-            xLeg = mouse_x_Coordinate - 970;
+            // HARDCODED FOR MY SCREEN, OTHER SCREENS COULD BE DIFFERENT. ALSO RESIZE IS ASSUMING THE NEW SIZE IS THE SAME AS THE OLD SIZE
+            xLeg = mouse_x_Coordinate - 810;
+            if (resized) {
+                xLeg = mouse_x_Coordinate - 970;
+            }
             yLeg = -(mouse_y_Coordinate - 316.5);
 
             angle = Math.atan(yLeg / xLeg);
@@ -405,6 +411,7 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
                 this.mesh.rotation.y += Math.PI/20;
             }
         }
+        //console.log(goal_orientation * 180/Math.PI);
     }
 
     this.update = function(direction, isFiring) {
@@ -471,6 +478,7 @@ function Zombie() {
     this.mesh.add(leftLeg);
     this.mesh.add(rightLeg);
 
+    this.final_orientation = 0;
 
     this.orient = function() {
 
@@ -500,6 +508,7 @@ function Zombie() {
             }
 
             final_orientation = (Math.PI/20 * Math.round(angle/(Math.PI/20)) + Math.PI/2) % (2*Math.PI);
+            this.final_orientation = final_orientation;
 
             // Now increment the current orientation toward the goal orientation
             difference = current_orientation - final_orientation;
@@ -527,6 +536,36 @@ function Zombie() {
 
     this.update = function() {
         this.orient();
+
+        // Zombie will move 2 radial units per frame regardless of angle
+        hypotenuse = Math.pow(Math.pow(xLeg, 2) + Math.pow(yLeg, 2), 0.5);
+
+        sine = Math.sin(yLeg / hypotenuse);
+        y = sine;
+        x = Math.pow(1 - Math.pow(y, 2), 0.5);
+
+        // Calculation for the second quadrant
+        if (xLeg < 0 && yLeg > 0) {
+            y = sine;
+            x = -Math.pow(1 - Math.pow(y, 2), 0.5);
+        }
+
+        // Calculation for the third quadrant
+        if (xLeg < 0 && yLeg < 0) {
+            y = sine;
+            x = -Math.pow(1 - Math.pow(y, 2), 0.5);
+        }
+
+        // Calculation for the fourth quadrant
+        if (xLeg > 0 && yLeg < 0) {
+            y = sine;
+            x = Math.pow(1 - Math.pow(y, 2), 0.5)
+        }        
+
+        delta_position = new THREE.Vector3(y, 0, x);
+        //this.mesh.position.z += 20;
+        //console.log(delta_position);
+        this.mesh.position.addScaledVector(delta_position, 1.5);
     }
 }
 
@@ -714,7 +753,7 @@ var isFiring = false;
 
 function loop(){
     var chickenDirection = new THREE.Vector3(0, 0, 0);
-    //zombie.mesh.rotation.x += 0.01;
+
     zombie.update();
     // Update the chicken's position if the user is pressing keys
     if (movingLeft == true && chicken.mesh.position.z >= -1068) {
