@@ -42,6 +42,8 @@ var highscore = 0;
 if (highscore == null) {
     highscore = 0;
 }
+var characterOrientation = 0;
+var bullets = [];
 
 /********** End step 1 **********/
 
@@ -63,7 +65,11 @@ function init() {
     createChicken();
 
     createZombie();
-    //createBullet();
+    // Preload bullets
+    for (var i = 0; i<50; i+=1) {
+        createBullet();
+    }
+
     // start a loop that will update the objects' positions
     // and render the scene on each frame
 
@@ -392,7 +398,7 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
 
         // Now increment the current orientation toward the goal orientation
         difference = current_orientation - goal_orientation;
-
+        characterOrientation = goal_orientation;
         if (goal_orientation < current_orientation) {
             if (difference > Math.PI) {
                     this.mesh.rotation.y += Math.PI/20;
@@ -423,16 +429,66 @@ function Bullet() {
 
     this.mesh = new THREE.Object3D();
 
-    var bulletShell = createBox(15, 1, 5, Colors.yellow, 0, 60, 0);
-    var bulletLight = new THREE.PointLight( 0xffcc00, 3, 100 );
-    var bulletLight2 = new THREE.PointLight( 0xffcc00, 3, 100 )
+    var bulletShell = createBox(5, 1, 15, Colors.yellow, 0, 60, 0);
+    //var bulletLight = new THREE.PointLight( 0xffcc00, 3, 100 );
+    //var bulletLight2 = new THREE.PointLight( 0xffcc00, 3, 100 )
 
-    bulletLight.position.set(11, 63, 0);
-    bulletLight2.position.set(-11, 63, 0);
+    //bulletLight.position.set(11, 63, 0);
+    //bulletLight2.position.set(-11, 63, 0);
 
     this.mesh.add(bulletShell);
-    this.mesh.add(bulletLight);
-    this.mesh.add(bulletLight2);
+    //this.mesh.add(bulletLight);
+    //this.mesh.add(bulletLight2);
+
+    this.oriented = false;
+    this.onScreen = false;
+    travelIncrements = 0;
+
+    this.orient = function() {
+        this.mesh.rotation.y = characterOrientation;
+        this.oriented = true;
+    }
+
+    this.update = function() {
+        // Remove the bullet from the scene if it has traveled 7000 units
+        if (travelIncrements == 350) {
+            this.onScreen = false;
+            travelIncrements = 0;
+        }
+        travelIncrements += 1;
+
+        // Bullet will move 20 radial units per frame regardless of angle
+        if (! this.oriented) {
+            this.orient();  
+        }
+
+        // If the bullet is taken off screen, reset orientation
+        if (! this.onScreen) {
+            this.oriented = false;
+        }
+
+        travelOrientation = (this.mesh.rotation.y) % (2*Math.PI);
+
+        bulletSine = Math.sin(travelOrientation);
+        yComponent = bulletSine;
+        hypotenuse = 1;
+        xComponent = Math.pow(1 - Math.pow(yComponent, 2), 0.5)
+
+        // Calculation for the second quadrant
+        if (travelOrientation > Math.PI/2 && travelOrientation <= Math.PI) {
+            xComponent = -xComponent;
+        }
+
+        // Calculation for the third quadrant
+        if (travelOrientation <= 3*Math.PI/2 && travelOrientation > Math.PI) {
+            xComponent = -xComponent;
+        }
+
+        position_change = new THREE.Vector3(yComponent, 0, xComponent);
+
+        this.mesh.position.addScaledVector(position_change, 20);
+}
+
 }
 
 function Zombie() {
@@ -445,7 +501,7 @@ function Zombie() {
     var rightEyeWithoutPupil = createRing(3, 7, -21, -2, -10, Colors.red);
     var leftPupil = createSphere(3, 20, 20, Colors.golden, -20, -2, 10);
     var rightPupil = createSphere(3, 20, 20, Colors.golden, -20, -2, -10);
-    var bottomTeeth = createBox(2, 3, 18, Colors.silver, -21.5, -23, 0);
+    var bottomTeeth = createBox(2, 3, 18, Colors.silver, -20.5, -23, 0);
     var mainBody = createBox(35, 30, 35, Colors.darkBlue, 0, -45, 0);
     var butt = createBox(35, 10, 35, Colors.brownDark, 0, -65, 0);
     var leftArm = createBox(7, 7.5, 7.5, Colors.greenDark, -23, -40, -10);
@@ -533,7 +589,7 @@ function Zombie() {
     this.update = function() {
         this.orient();
 
-        // Zombie will move 2 radial units per frame regardless of angle
+        // Zombie will move 1 radial unit per frame regardless of angle
         hypotenuse = Math.pow(Math.pow(xLeg, 2) + Math.pow(yLeg, 2), 0.5);
 
         sine = Math.sin(yLeg / hypotenuse);
@@ -732,6 +788,8 @@ function createChicken() {
 function createBullet() {
     bullet = new Bullet();
     scene.add(bullet.mesh);
+    bullet.mesh.position.set(0, -200, 0);
+    bullets.push(bullet);
 }
 
 function createGround() {
@@ -762,11 +820,37 @@ var movingRight = false;
 var movingForward = false;
 var movingBackward = false;
 var isFiring = false;
+var fireInterval = 0;
+var bulletIndex = 0;
 
 function loop(){
     var chickenDirection = new THREE.Vector3(0, 0, 0);
+
     zombie.headRotate();
     zombie.update();
+
+    // Move existing bullets
+    for (var i = 0; i<bullets.length;i+=1) {
+        currBullet = bullets[i];
+        if (currBullet.onScreen) {
+            currBullet.update();
+        }
+    }
+
+    // Create new bullets for every 0.2 seconds that the mouse is down assuming 60 fps
+    if (isFiring) {
+        if (fireInterval % 12 == 0) {
+            fireInterval = 0;
+            if (bullets[bulletIndex].onScreen) {
+                bulletIndex += 1;     
+                bulletIndex = bulletIndex % bullets.length;        
+            }
+            bullets[bulletIndex].onScreen = true;
+            bullets[bulletIndex].mesh.position.set(chicken.mesh.position.x, chicken.mesh.position.y, chicken.mesh.position.z);
+        }
+        fireInterval += 1;
+    }
+
     // Update the chicken's position if the user is pressing keys
     if (movingLeft == true && chicken.mesh.position.z >= -1068) {
         left_or_right = -0.07;
@@ -889,6 +973,7 @@ function createControls() {
         'mouseup', 
         function(ev) {
             isFiring = false;
+            fireInterval = 0;
             mouseDown = false;
         }
     );
