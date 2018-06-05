@@ -66,7 +66,7 @@ function init() {
 
     createZombie();
     // Preload bullets
-    for (var i = 0; i<50; i+=1) {
+    for (var i = 0; i<100; i+=1) {
         createBullet();
     }
 
@@ -442,7 +442,7 @@ function Bullet() {
 
     this.oriented = false;
     this.onScreen = false;
-    travelIncrements = 0;
+    this.travelIncrements = 0;
 
     this.orient = function() {
         this.mesh.rotation.y = characterOrientation;
@@ -450,12 +450,12 @@ function Bullet() {
     }
 
     this.update = function() {
-        // Remove the bullet from the scene if it has traveled 7000 units
-        if (travelIncrements == 350) {
+        // Remove the bullet from the scene if it has traveled 4000 units
+        if (this.travelIncrements == 200) {
             this.onScreen = false;
-            travelIncrements = 0;
+            this.travelIncrements = -1;
         }
-        travelIncrements += 1;
+        this.travelIncrements += 1;
 
         // Bullet will move 20 radial units per frame regardless of angle
         if (! this.oriented) {
@@ -465,6 +465,7 @@ function Bullet() {
         // If the bullet is taken off screen, reset orientation
         if (! this.onScreen) {
             this.oriented = false;
+            this.mesh.position.set(0, -200, 0);
         }
 
         travelOrientation = (this.mesh.rotation.y) % (2*Math.PI);
@@ -837,11 +838,11 @@ function loop(){
         }
     }
 
-    // Create new bullets for every 0.2 seconds that the mouse is down assuming 60 fps
+    // Create new bullets for every 0.15 seconds that the mouse is down assuming 60 fps
     if (isFiring) {
-        if (fireInterval % 12 == 0) {
+        if (fireInterval % 9 == 0) {
             fireInterval = 0;
-            if (bullets[bulletIndex].onScreen) {
+            while (bullets[bulletIndex].onScreen) {
                 bulletIndex += 1;     
                 bulletIndex = bulletIndex % bullets.length;        
             }
