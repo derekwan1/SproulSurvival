@@ -44,6 +44,7 @@ if (highscore == null) {
 }
 var characterOrientation = 0;
 var bullets = [];
+var zombies = [];
 
 /********** End step 1 **********/
 
@@ -444,14 +445,26 @@ function Bullet() {
     this.onScreen = false;
     this.travelIncrements = 0;
 
+    this.checkCollisions = function() {
+        for (var i =0; i<zombies.length; i+=1) {
+            if (Math.abs(this.mesh.position.z - zombies[i].mesh.position.z) < 25 && Math.abs(this.mesh.position.x - zombies[i].mesh.position.x) < 20) {
+                if (zombies[i].hitPoints > 0) {
+                    zombies[i].hitPoints -= 1;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
     this.orient = function() {
         this.mesh.rotation.y = characterOrientation;
         this.oriented = true;
     }
 
     this.update = function() {
-        // Remove the bullet from the scene if it has traveled 4000 units
-        if (this.travelIncrements == 200) {
+        // Remove the bullet from the scene if it has traveled 2000 units or if it collides with a zombie
+        if (this.travelIncrements == 100 || this.checkCollisions()) {
             this.onScreen = false;
             this.travelIncrements = -1;
         }
@@ -532,6 +545,7 @@ function Zombie() {
 
     this.final_orientation = 0;
     this.rotateAmount = 0.01;
+    this.hitPoints = 8;
 
     this.orient = function() {
 
@@ -590,34 +604,40 @@ function Zombie() {
     this.update = function() {
         this.orient();
 
-        // Zombie will move 1 radial unit per frame regardless of angle
-        hypotenuse = Math.pow(Math.pow(xLeg, 2) + Math.pow(yLeg, 2), 0.5);
-
-        sine = Math.sin(yLeg / hypotenuse);
-        y = sine;
-        x = Math.pow(1 - Math.pow(y, 2), 0.5);
-
-        // Calculation for the second quadrant
-        if (xLeg < 0 && yLeg > 0) {
-            y = sine;
-            x = -Math.pow(1 - Math.pow(y, 2), 0.5);
+        if (this.hitPoints == 0) {
+            this.mesh.position.y -= 4;
         }
+        else {
 
-        // Calculation for the third quadrant
-        if (xLeg < 0 && yLeg < 0) {
+            // Zombie will move 1 radial unit per frame regardless of angle
+            hypotenuse = Math.pow(Math.pow(xLeg, 2) + Math.pow(yLeg, 2), 0.5);
+
+            sine = Math.sin(yLeg / hypotenuse);
             y = sine;
-            x = -Math.pow(1 - Math.pow(y, 2), 0.5);
+            x = Math.pow(1 - Math.pow(y, 2), 0.5);
+
+            // Calculation for the second quadrant
+            if (xLeg < 0 && yLeg > 0) {
+                y = sine;
+                x = -Math.pow(1 - Math.pow(y, 2), 0.5);
+            }
+
+            // Calculation for the third quadrant
+            if (xLeg < 0 && yLeg < 0) {
+                y = sine;
+                x = -Math.pow(1 - Math.pow(y, 2), 0.5);
+            }
+
+            // Calculation for the fourth quadrant
+            if (xLeg > 0 && yLeg < 0) {
+                y = sine;
+                x = Math.pow(1 - Math.pow(y, 2), 0.5)
+            }        
+
+            delta_position = new THREE.Vector3(y, 0, x);
+
+            this.mesh.position.addScaledVector(delta_position, 1);
         }
-
-        // Calculation for the fourth quadrant
-        if (xLeg > 0 && yLeg < 0) {
-            y = sine;
-            x = Math.pow(1 - Math.pow(y, 2), 0.5)
-        }        
-
-        delta_position = new THREE.Vector3(y, 0, x);
-
-        this.mesh.position.addScaledVector(delta_position, 1);
 }
 
     this.headRotate = function() {
@@ -657,6 +677,7 @@ function createZombie() {
     zombie = new Zombie();
     scene.add(zombie.mesh);
     zombie.mesh.position.set(160, 75, -50);
+    zombies.push(zombie);
 }
 
 function createTrees() {
