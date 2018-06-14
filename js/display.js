@@ -1,10 +1,20 @@
 /**
  *
- * KROSSY ROAD
+ * Sproul Survival
  * ----
  * Simple game for education purposes, by Derek Wan
  *
  */
+
+ /**
+TODO: Chance of exploding, damage other zombies
+    Chance of mega-zombie, if you leave them alive too long
+    Fix collision system when zombie is dead
+    UFO Assembly to kill zombies for you
+    Need to add zombie mesh so that they don't merge into one
+    Need to add more satisfying zombie death
+
+ **/
 
 var Colors = {
     red:0xff0000,
@@ -447,7 +457,7 @@ function Bullet() {
 
     this.checkCollisions = function() {
         for (var i =0; i<zombies.length; i+=1) {
-            if (Math.abs(this.mesh.position.z - zombies[i].mesh.position.z) < 25 && Math.abs(this.mesh.position.x - zombies[i].mesh.position.x) < 20) {
+            if (Math.abs(this.mesh.position.z - zombies[i].mesh.position.z) < 25 && Math.abs(this.mesh.position.x - zombies[i].mesh.position.x) < 20 && zombies[i].mesh.position.y > 60 && zombies[i].mesh.position.y < 140) {
                 if (zombies[i].hitPoints > 0) {
                     zombies[i].hitPoints -= 1;
                 }
@@ -464,10 +474,12 @@ function Bullet() {
 
     this.update = function() {
         // Remove the bullet from the scene if it has traveled 2000 units or if it collides with a zombie
+
         if (this.travelIncrements == 100 || this.checkCollisions()) {
             this.onScreen = false;
             this.travelIncrements = -1;
         }
+
         this.travelIncrements += 1;
 
         // Bullet will move 20 radial units per frame regardless of angle
@@ -548,6 +560,7 @@ function Zombie() {
     this.hitPoints = 4;
     this.timeStep = 0;
     this.mass = 50;
+    this.offScreen = false;
 
     this.orient = function() {
 
@@ -628,12 +641,17 @@ function Zombie() {
     this.update = function() {
         this.orient();
 
-        if (this.bounces < 10) {
+        if (this.bounces < 8) {
             this.bounce();
         }
-        
+
         if (this.hitPoints == 0) {
-            this.mesh.position.y -= 4;
+            if (this.mesh.position.y > -50) {
+                this.mesh.position.y -= 4;
+            }
+            else {
+                this.offScreen = true;
+            }
         }
         else {
 
@@ -704,9 +722,15 @@ function Tree() {
 function createZombie() {
     zombie = new Zombie();
     scene.add(zombie.mesh);
-    zombie.mesh.position.set(160, 400, -50);
+
+    zombie.mesh.position.set(getRandomInt(chicken.mesh.position.x-500, chicken.mesh.position.x+500), 400, chicken.mesh.position.z-500, chicken.mesh.position.z + 500);
     zombies.push(zombie);
+
     zombie.bounces = 0;
+}
+
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 function createTrees() {
@@ -873,12 +897,33 @@ var movingBackward = false;
 var isFiring = false;
 var fireInterval = 0;
 var bulletIndex = 0;
+var zombieInterval = 120;
+var loops = 0;
 
 function loop(){
     var chickenDirection = new THREE.Vector3(0, 0, 0);
 
+    loops += 1;
+    if (loops % zombieInterval == 0) {
+        loops = 0;
+        createZombie();
+    }
+
+    for (var i = 0; i < zombies.length; i += 1) {
+        if (zombies[i].offScreen) {
+            scene.remove(zombies[i]);
+            zombies.splice(i, 1)
+            i -= 1
+        }
+        else {
+            zombies[i].headRotate();
+            zombies[i].update();
+        }
+    }
+    /**
     zombie.headRotate();
     zombie.update();
+    **/
 
     // Move existing bullets
     for (var i = 0; i<bullets.length;i+=1) {
