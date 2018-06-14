@@ -545,7 +545,9 @@ function Zombie() {
 
     this.final_orientation = 0;
     this.rotateAmount = 0.01;
-    this.hitPoints = 8;
+    this.hitPoints = 4;
+    this.timeStep = 0;
+    this.mass = 50;
 
     this.orient = function() {
 
@@ -601,9 +603,35 @@ function Zombie() {
         }
     }
 
+    this.bounce = function() {
+        if (this.mesh.position.y > 75 && this.bounces == 0) {
+            this.velocity = -9.8 * this.timeStep;
+            this.energy = 0.5 * this.mass * Math.pow(this.velocity, 2);
+        }
+
+        else if (this.mesh.position.y < 75) {
+            this.timeStep = 0;
+            this.bounces += 1;
+            this.energy = 0.5 * this.energy;
+            this.velocity = Math.pow(2*this.energy/this.mass, 0.5);
+            this.initialVelocity = this.velocity;
+        }
+
+        else if (this.mesh.position.y > 75 && this.bounces >= 1) {
+            this.velocity = this.initialVelocity - (9.8*this.timeStep);
+        }
+
+        this.mesh.position.y += this.velocity;
+        this.timeStep += 1/60
+    }
+
     this.update = function() {
         this.orient();
 
+        if (this.bounces < 10) {
+            this.bounce();
+        }
+        
         if (this.hitPoints == 0) {
             this.mesh.position.y -= 4;
         }
@@ -676,8 +704,9 @@ function Tree() {
 function createZombie() {
     zombie = new Zombie();
     scene.add(zombie.mesh);
-    zombie.mesh.position.set(160, 75, -50);
+    zombie.mesh.position.set(160, 400, -50);
     zombies.push(zombie);
+    zombie.bounces = 0;
 }
 
 function createTrees() {
