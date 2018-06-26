@@ -7,13 +7,12 @@
  */
 
  /**
-TODO: Chance of exploding, damage other zombies
-    Chance of mega-zombie, if you leave them alive too long
-    Fix collision system when zombie is dead
-    UFO Assembly to kill zombies for you
-    Need to add zombie mesh so that they don't merge into one
-    Need to add more satisfying zombie death
-
+TODO: 
+    1. Need to add more satisfying zombie death, probably an explosion of green cubes
+    2. Chance of exploding, damage other zombies--since this will speed up zombie death rate, also add mechanism for recycling zombies
+    3. Chance of mega-zombie, if you leave them alive too long
+    4. UFO Assembly to kill zombies for you
+    5. Need to add zombie mesh so that they don't merge into one
  **/
 
 var Colors = {
@@ -460,6 +459,8 @@ function Bullet() {
             if (Math.abs(this.mesh.position.z - zombies[i].mesh.position.z) < 25 && Math.abs(this.mesh.position.x - zombies[i].mesh.position.x) < 20 && zombies[i].mesh.position.y > 60 && zombies[i].mesh.position.y < 140) {
                 if (zombies[i].hitPoints > 0) {
                     zombies[i].hitPoints -= 1;
+                    zombies[i].pushBack = 1;
+                    zombies[i].bulletVelocity = this.position_change;
                 }
                 return true;
             }
@@ -510,9 +511,9 @@ function Bullet() {
             xComponent = -xComponent;
         }
 
-        position_change = new THREE.Vector3(yComponent, 0, xComponent);
+        this.position_change = new THREE.Vector3(yComponent, 0, xComponent);
 
-        this.mesh.position.addScaledVector(position_change, 20);
+        this.mesh.position.addScaledVector(this.position_change, 20);
 }
 
 }
@@ -561,6 +562,7 @@ function Zombie() {
     this.timeStep = 0;
     this.mass = 50;
     this.offScreen = false;
+    this.pushBack = 0;
 
     this.orient = function() {
 
@@ -641,6 +643,15 @@ function Zombie() {
     this.update = function() {
         this.orient();
 
+        if (this.pushBack < 10 && this.pushBack > 0) {
+            this.pushBack += 1;
+            this.mesh.position.addScaledVector(this.bulletVelocity, 5);
+        }
+
+        else {
+            this.pushBack = 0;
+        }
+
         if (this.bounces < 8) {
             this.bounce();
         }
@@ -683,6 +694,11 @@ function Zombie() {
             delta_position = new THREE.Vector3(y, 0, x);
 
             this.mesh.position.addScaledVector(delta_position, 1);
+            /**
+            if (Math.abs(this.mesh.position.x - chicken.mesh.position.x) < 30 && Math.abs(this.mesh.position.z - chicken.mesh.position.z) < 30 && Math.abs(this.mesh.position.y) < 130) {
+                gameOver();
+            }
+            **/
         }
 }
 
@@ -884,7 +900,7 @@ function createGround() {
 }
 
 function gameOver(){
-    alert("Mr. Chicken has been run over! Try again!");
+    alert("You have been flyered! Try again.");
     document.location.reload(true);
     chicken.reload(forcedReload);
 }
@@ -903,6 +919,7 @@ var loops = 0;
 function loop(){
     var chickenDirection = new THREE.Vector3(0, 0, 0);
 
+    // Uncomment to generate lots of zombies
     loops += 1;
     if (loops % zombieInterval == 0) {
         loops = 0;
