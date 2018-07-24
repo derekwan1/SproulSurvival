@@ -34,7 +34,10 @@ var Colors = {
     darkBlue: 0x1341c1,
     lightBlue: 0xadd8e6, 
     yellow: 0xc5c500, 
-    darkYellow: 0x969602
+    darkYellow: 0x969602,
+    skinColor: 0xffcd94,
+    berkeleyBlue: 0x003262,
+    berkeleyGold: 0xC4820F
 };
 
 /**
@@ -46,7 +49,7 @@ var Colors = {
 
 var score = 0;
 var resized = false;
-//var highscore = localStorage.getItem("highscore");
+var highscore = localStorage.getItem("highscore2");
 var highscore = 0;
 if (highscore == null) {
     highscore = 0;
@@ -54,6 +57,8 @@ if (highscore == null) {
 var characterOrientation = 0;
 var bullets = [];
 var zombies = [];
+// Hand index is global variable for the index it takes in the mesh chilren array of the character
+var handIndex = 0;
 
 /********** End step 1 **********/
 
@@ -74,7 +79,7 @@ function init() {
 
     createChicken();
 
-    createZombie();
+    //createZombie();
     // Preload bullets
     for (var i = 0; i<100; i+=1) {
         createBullet();
@@ -128,11 +133,10 @@ function createScene() {
     // Set the position of the camera
     
     camera.position.x = -150;
-    //camera.position.x = 150;
     camera.position.z = 150;
-    //camera.position.z = 200;
-    camera.position.y = 500;
-    //camera.position.y = 50;
+    // camera.position.y = 400;
+    camera.position.y = 400;
+
     camera.lookAt(150, 0, 125);
 
     //Debugging position for removing passed
@@ -301,37 +305,60 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
 
     this.mesh = new THREE.Object3D();
 
-    var head = createBox(20, 40, 30, color, 0, 40, 0);
-    var beak = createBox(6, 6, 10, Colors.orange, 0, 50, 20);
-    var gobble = createBox(6, 8, 6, Colors.red, 0, 43, 18.5);
-    var hat = createBox(9, 6, 12.5, Colors.red, 0, 63, 0);
-    var rightEye = createBox(4, 4, 4, Colors.black, -9, 50, 5);
-    var leftEye = createBox(4, 4, 4, Colors.black, 9, 50, 5);
-    var rightWing = createBox(10, 10, 30, color, -13, 30, -5);
-    var leftWing = createBox(10, 10, 30, color, 13, 30, -5);
+    var head = createBox(40, 40, 30, Colors.skinColor, 0, 60, 0);
+    var leftEyebrow = createBox(10, 2, 2, Colors.black, -10, 70, 15);
+    var rightEyebrow = createBox(10, 2, 2, Colors.black, 10, 70, 15);
+    var leftEye = createCircle(6, 10, 63, 16, Colors.brown, 0, 2*Math.PI);
+    var rightEye = createCircle(6, -10, 63, 16, Colors.brown, 0, 2*Math.PI);
+    var leftPupil = createCircle(2, 10, 63, 17, Colors.golden, 0, 2*Math.PI);
+    var rightPupil = createCircle(2, -10, 63, 17, Colors.golden, 0, 2*Math.PI);
+    var mouthOutline = createBox(30, 5, 5, Colors.black, 0, 50, 13);
+    var topTeeth = createBox(28, 1, 2, Colors.white, 0, 52.5, 15);
+    var bottomTeeth = createBox(28, 1, 3, Colors.white, 0, 48, 15);
 
-    var rightLeg = createBox(5, 28, 5, Colors.orange, -7, 15, -5);
-    var leftLeg = createBox(5, 28, 5, Colors.orange, 7, 15, -5);
-    var rightFoot = createBox(10, 2, 10, Colors.orange, -7, 0, -5);
-    var leftFoot = createBox(10, 2, 10, Colors.orange, 7, 0, -5);
+    var hatVertical = createBox(45, 20, 35, Colors.berkeleyBlue, 0, 83, 0);
+    var hatHorizontal = createBox(45, 5, 20, Colors.berkeleyBlue, 0, 76, -20);
 
-    var tail = createBox(20, 20, 10, color, 0, 30, -21);
-    var tailEnd = createBox(10, 10, 5, color, 0, 30, -29);
+    var C1 = createBox(10, 1, 2, Colors.berkeleyGold, -12, 90, 18);
+    var C2 = createBox(2, 10, 2, Colors.berkeleyGold, -16, 85, 18);
+    var C3 = createBox(10, 1, 2, Colors.berkeleyGold, -12, 80, 18);
+
+    var A1 = createBox(10, 1, 2, Colors.berkeleyGold, 2, 90, 18);
+    var A2 = createBox(10, 1, 2, Colors.berkeleyGold, 2, 85, 18);
+    var A3 = createBox(2, 11, 2, Colors.berkeleyGold, -3, 85, 18);
+    var A4 = createBox(2, 11, 2, Colors.berkeleyGold, 6, 85, 18);
+
+    var L1 = createBox(2, 10, 2, Colors.berkeleyGold, 12, 85, 18);
+    var L2 = createBox(8, 1, 2, Colors.berkeleyGold, 15, 80, 18);
+
+    var body = createBox(40, 40, 30, Colors.greenDark, 0, 20, 0);
+    var hand = createSphere(6, 50, 50, Colors.skinColor, 22, 35, 20);
+    hand.count = 0;
 
     this.mesh.add(head);
-    this.mesh.add(beak);
-    this.mesh.add(gobble);
+    this.mesh.add(leftEyebrow);
+    this.mesh.add(rightEyebrow);
     this.mesh.add(rightEye);
     this.mesh.add(leftEye);
-    this.mesh.add(hat);
-    this.mesh.add(rightWing);
-    this.mesh.add(leftWing);
-    this.mesh.add(rightLeg);
-    this.mesh.add(leftLeg);
-    this.mesh.add(rightFoot);
-    this.mesh.add(leftFoot);
-    this.mesh.add(tail);
-    this.mesh.add(tailEnd);
+    this.mesh.add(leftPupil);
+    this.mesh.add(rightPupil);
+    this.mesh.add(mouthOutline);
+    this.mesh.add(topTeeth);
+    this.mesh.add(bottomTeeth);
+    this.mesh.add(hatVertical);
+    this.mesh.add(hatHorizontal);
+    this.mesh.add(body);
+    this.mesh.add(C1);
+    this.mesh.add(C2);
+    this.mesh.add(C3);
+    this.mesh.add(A1);
+    this.mesh.add(A2);
+    this.mesh.add(A3);
+    this.mesh.add(A4);
+    this.mesh.add(L1);
+    this.mesh.add(L2);
+    handIndex = this.mesh.children.length;
+    this.mesh.add(hand)
 
     this.mesh.rotation.y = Math.PI/2;
     this.mesh.position.x = 150;
@@ -662,6 +689,7 @@ function Zombie() {
             }
             else {
                 this.offScreen = true;
+                score += 1
             }
         }
         else {
@@ -874,7 +902,12 @@ function createTrees() {
 function createChicken() {
     chicken = new Chicken(Colors.white, 'white');
     scene.add(chicken.mesh);
+
+    // Hardcoded the index. Be sure to change eventually
+    chicken.mesh.children[1].rotation.z = -Math.PI/16;
+    chicken.mesh.children[2].rotation.z = Math.PI/16;
 }
+
 
 function createBullet() {
     bullet = new Bullet();
@@ -905,6 +938,19 @@ function gameOver(){
     chicken.reload(forcedReload);
 }
 
+function bobble(object) {
+    if (object.count < 4) {
+        object.position.z -= 1;
+        object.count += 1
+    }
+    else if (object.count < 8) {
+        object.position.z += 1;
+        object.count += 1
+    }
+    if (object.count == 8) {
+        object.count = 0;
+    }
+}
 
 var movingLeft = false;
 var movingRight = false;
@@ -919,7 +965,7 @@ var loops = 0;
 function loop(){
     var chickenDirection = new THREE.Vector3(0, 0, 0);
 
-    // Uncomment to generate lots of zombies
+    //Uncomment to generate lots of zombies
     loops += 1;
     if (loops % zombieInterval == 0) {
         loops = 0;
@@ -961,6 +1007,7 @@ function loop(){
             bullets[bulletIndex].onScreen = true;
             bullets[bulletIndex].mesh.position.set(chicken.mesh.position.x, chicken.mesh.position.y, chicken.mesh.position.z);
         }
+        bobble(chicken.mesh.children[handIndex]);
         fireInterval += 1;
     }
 
@@ -993,7 +1040,7 @@ function loop(){
     // score = SOMETHING ELSE
     document.getElementById("time").innerHTML = score;
     if (score > highscore) {
-        localStorage.setItem("highscore", score);  
+        localStorage.setItem("highscore2", score);  
         document.getElementById("displayedHighScore").innerHTML = score;    
     }
     else {
